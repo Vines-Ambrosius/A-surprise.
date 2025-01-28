@@ -1,0 +1,198 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>一个惊喜</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Microsoft YaHei', Arial, sans-serif;
+      background: black;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+    #welcome, #fireworks-container {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    #fireworks-container {
+      display: none;
+    }
+    #countdown {
+      font-size: 3rem;
+      margin-bottom: 20px;
+    }
+    #text {
+      font-size: 2rem;
+      text-align: center;
+      white-space: pre-wrap;
+    }
+    #clickText {
+      font-size: 2.5rem;
+      text-align: center;
+      display: none;
+      animation: fadeIn 2s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1;
+    }
+  </style>
+</head>
+<body>
+  <!-- 欢迎屏幕 -->
+  <div id="welcome">
+    <div id="countdown"></div>
+    <div id="text"></div>
+    <div id="clickText">点击看看吧<br>(๑╹ヮ╹๑)ﾉ</div>
+  </div>
+
+  <!-- 烟花特效屏幕 -->
+  <div id="fireworks-container">
+    <canvas id="fireworks"></canvas>
+  </div>
+
+  <script>
+    const countdownElement = document.getElementById('countdown');
+    const textElement = document.getElementById('text');
+    const clickText = document.getElementById('clickText');
+    const welcome = document.getElementById('welcome');
+    const fireworksContainer = document.getElementById('fireworks-container');
+    const canvas = document.getElementById('fireworks');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const particles = [];
+
+    // 倒计时逻辑
+    const targetDate = new Date('2025-01-28T23:59:59'); // 除夕夜时间
+    function updateCountdown() {
+      const now = new Date();
+      const diff = targetDate - now;
+      if (diff <= 0) {
+        countdownElement.textContent = "新年快乐！";
+        return;
+      }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      countdownElement.textContent = `距离除夕还有：${days}天 ${hours}小时 ${minutes}分 ${seconds}秒`;
+    }
+    setInterval(updateCountdown, 1000);
+    updateCountdown();
+
+    // 文字打字效果
+    const messages = [
+      "新的一年，\n大家也要一起剑三啊！\n祝大家新年快乐|•'-'•)و✧",
+      "点击看看吧\n(๑╹ヮ╹๑)ﾉ"
+    ];
+
+    let currentMessage = 0;
+
+    function typeMessage(message, callback) {
+      let index = 0;
+      const interval = setInterval(() => {
+        textElement.textContent = message.slice(0, index++);
+        if (index > message.length) {
+          clearInterval(interval);
+          setTimeout(callback, 1500); // 停留 1.5 秒
+        }
+      }, 100);
+    }
+
+    // 欢迎动画
+    function showWelcome() {
+      typeMessage(messages[currentMessage], () => {
+        if (currentMessage === 0) {
+          currentMessage++;
+          textElement.style.display = 'none';
+          clickText.style.display = 'block';
+        }
+      });
+    }
+
+    // 烟花特效
+    function Particle(x, y, color) {
+      this.x = x;
+      this.y = y;
+      this.color = color;
+      this.radius = Math.random() * 4 + 1;
+      this.speedX = Math.random() * 4 - 2;
+      this.speedY = Math.random() * 4 - 2;
+      this.opacity = 1;
+
+      this.update = function () {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.opacity -= 0.02;
+      };
+
+      this.draw = function () {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${this.color},${this.opacity})`;
+        ctx.fill();
+      };
+    }
+
+    function createFireworks(e) {
+      const colors = ['255, 99, 71', '50, 205, 50', '30, 144, 255', '255, 215, 0'];
+      for (let i = 0; i < 50; i++) {
+        const x = e.clientX;
+        const y = e.clientY;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        particles.push(new Particle(x, y, color));
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        particles[i].draw();
+        if (particles[i].opacity <= 0) {
+          particles.splice(i, 1);
+          i--;
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    // 点击进入烟花特效
+    clickText.addEventListener('click', () => {
+      welcome.style.display = 'none';
+      fireworksContainer.style.display = 'flex';
+    });
+
+    canvas.addEventListener('click', createFireworks);
+
+    // 初始化
+    showWelcome();
+    animate();
+  </script>
+</body>
+</html>
